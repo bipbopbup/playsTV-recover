@@ -28,8 +28,8 @@ def scroll(url):
     options.add_argument("--headless")
     driver = webdriver.Firefox(options=options)
     driver.get(url)
-    time.sleep(2)  # Allow 2 seconds for the web page to open
-    scroll_pause_time = 2 # You can set your own pause time. My laptop is a bit slow so I use 1 sec
+    time.sleep(3)  # Allow 2 seconds for the web page to open
+    scroll_pause_time = 3 # You can set your own pause time. My laptop is a bit slow so I use 1 sec
     screen_height = driver.execute_script("return window.screen.height;")   # get the screen height of the web
     i = 1
 
@@ -61,7 +61,7 @@ def scroll(url):
     return urls
 
 def extract_video_urls(url):
-    print('Searching videos in: ',url,'\n\nPlease wait...\nIf you get less videos than expected, interrupt the script and execute it again.')
+    print('Searching videos in: ',url,'\n\nPlease wait...\nIf you get less videos than expected, interrupt the script and execute it again.\n')
     url_dict = scroll(url)
 
     return url_dict
@@ -132,15 +132,13 @@ if __name__ == '__main__':
     
     for url in updated_list:
         local_filename = url.split('/')[-1]
-        if local_filename == 'o-bois':
-            print('Downloading: ', local_filename)
-            try:
-                urlopen(url)
-                real_url = read_url(url)
-                download_video_from(real_url, local_filename)
-            except:
-                pass
-            
+        response = requests.get(url)
+        if response.status_code == 200:
+            real_url = read_url(url)
+            print('Downloading: ', local_filename, 'from: ', real_url)
+            download_video_from(real_url, local_filename)
+        else:
+            print(local_filename, 'video could not be recovered... :_(')
     
     print('All videos downloaded!')
     
