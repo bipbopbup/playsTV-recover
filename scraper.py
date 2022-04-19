@@ -138,10 +138,9 @@ if __name__ == '__main__':
     
     for url in updated_list:
         response = requests.get(url)
-        #print('URL: ',url, '\n')
+        local_filename = url.split('/')[-1]
         real_url = read_url(url)
         if response.status_code == 200 and real_url != '0':
-            local_filename = url.split('/')[-1]
             print('Downloading: ', local_filename, 'from: ', real_url)
             download_video_from(real_url, local_filename)
         else:
