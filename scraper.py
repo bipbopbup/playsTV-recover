@@ -24,6 +24,8 @@ class MyProgressBar():
             self.pbar.finish()
 
 def scroll(url):
+    # Opens an invisible Firefox instance and scrolls down to access all videos until it can scroll no more.
+    # Saves the URLs in a dictionary
     options = FirefoxOptions()
     options.add_argument("--headless")
     driver = webdriver.Firefox(options=options)
@@ -53,7 +55,6 @@ def scroll(url):
         url_wena, url_mala = new_url.split('?', 1)
         urls[url_wena] = i
         i = i+1
-        #print(url_wena)
     
     print('Total videos found: ', len(urls))
     driver.quit()
@@ -67,6 +68,7 @@ def extract_video_urls(url):
     return url_dict
 
 def get_url_code(user, year):
+    # Retrieves the unique code that every user has. This code is needed for the final URL
     url =  'https://web.archive.org/web/' + str(year) + '*/http://plays.tv/u/' + user
     options = FirefoxOptions()
     options.add_argument("--headless")
@@ -81,14 +83,15 @@ def get_url_code(user, year):
     code = re.findall('<div class="captures-range-info">Saved <strong>1 time</strong> <a href="/web/([0-9]{14})', str(parent[0]))
     
     if len(code) == 0:
-        print('codigo vacio en',url,'\n')
+        print('User code not found in',url,'\n')
         code = get_url_code(user, year-1)
-    print('Archives.org made a copy of your plays.tv videos in ',year,'.')
+    print('Success! Archives.org made a copy of your plays.tv videos in ',year)
     driver.quit()
 
     return code[0]
 
 def update_urls(url_dict):
+    # Transforms the dictionary into a list and updates the old URLs so we can access to them.
     string = 'mp_'
     updated_list = []
     for key in url_dict:
@@ -100,28 +103,31 @@ def update_urls(url_dict):
     return updated_list
 
 def read_url(url):
+    # Reads the source code of the webpage where the video can be found, and if so, returns the URL where the video is.
+    # If not, return '0'
     req = ur.Request(url)
     req.add_header('user-agent','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36')
     f = ur.urlopen(req)
     s = f.read().decode()
     source_url = re.findall('<source res="720" src="(.*)" type="video/mp4"><source res="480"', s)
-    finished_source_url = 'https:'+source_url[0]
-    print('Source URL found: ', finished_source_url)
+    if len(source_url) == 0:
+        finished_source_url = '0'
+    else:
+        finished_source_url = 'https:'+source_url[0]
     f.close()
     return finished_source_url
 
 def download_video_from(url, filename):
- 
+    # Downloads the video and prints the progress
     local_filename = url.split('/')[-8]
-    # NOTE the stream=True parameter
     video_name = filename+'.mp4'
     ur.urlretrieve(url, video_name, MyProgressBar()) 
     print(video_name, ' succesfully downloaded!\n')
     return 
 
 if __name__ == '__main__':
-    #username = input("Please enter your plays.tv username:\n")
-    username = 'Bipbopbup'
+    username = input("Please enter your plays.tv username:\n")
+
     code = get_url_code(username, 2019)
 
     url = 'https://web.archive.org/web/' + code + '/http://plays.tv/u/' + username
@@ -131,14 +137,15 @@ if __name__ == '__main__':
     updated_list = update_urls(url_dict)
     
     for url in updated_list:
-        local_filename = url.split('/')[-1]
         response = requests.get(url)
-        if response.status_code == 200:
-            real_url = read_url(url)
+        #print('URL: ',url, '\n')
+        real_url = read_url(url)
+        if response.status_code == 200 and real_url != '0':
+            local_filename = url.split('/')[-1]
             print('Downloading: ', local_filename, 'from: ', real_url)
             download_video_from(real_url, local_filename)
         else:
-            print(local_filename, 'video could not be recovered... :_(')
+            print(local_filename, 'video could not be recovered... :_(\n')
     
     print('All videos downloaded!')
     
